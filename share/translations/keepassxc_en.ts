@@ -3380,6 +3380,10 @@ Would you like to correct it?</source>
         <source> seconds</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Clear agent</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>EditGroupWidget</name>
@@ -9779,6 +9783,14 @@ This option is deprecated, use --set-key-file instead.</source>
     </message>
     <message>
         <source>No agent running, cannot list identities.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to remove all SSH identities from agent.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>All SSH identities removed from agent.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
