@@ -2669,6 +2669,10 @@ Would you like to correct it?</source>
             <numerusform></numerusform>
         </translation>
     </message>
+    <message>
+        <source>Select certificate</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>EditEntryWidgetAdvanced</name>
@@ -3096,6 +3100,14 @@ Would you like to correct it?</source>
     </message>
     <message>
         <source> seconds</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use certificate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Certificate</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -4835,6 +4847,22 @@ Line %2, column %3</source>
         <source>Failed to open private key</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Certificate is an attachment but no attachments provided.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Certificate is empty</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>File too large to be a certificate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to open certificate</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>KeePass1Reader</name>
@@ -6202,6 +6230,22 @@ We recommend you use the AppImage available on our downloads page.</source>
     </message>
     <message>
         <source>Unexpected EOF when writing private key</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Invalid certificate file, expecting an OpenSSH certificate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unsupported certificate file</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Can&apos;t write certificate as it is empty</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unexpected EOF when writing certificate</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -9251,6 +9295,14 @@ This option is deprecated, use --set-key-file instead.</source>
     </message>
     <message>
         <source>No agent running, cannot list identities.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Agent refused this identity certificate. Possible reasons include:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Invalid or empty certificate.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

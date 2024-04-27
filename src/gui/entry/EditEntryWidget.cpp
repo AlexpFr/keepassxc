@@ -94,6 +94,7 @@ EditEntryWidget::EditEntryWidget(QWidget* parent)
     , m_autoTypeWindowSequenceGroup(new QButtonGroup(this))
     , m_usernameCompleter(new QCompleter(this))
     , m_usernameCompleterModel(new QStringListModel(this))
+    , m_blockSSHAgentSignals(new bool)
 {
     setupMain();
     setupAdvanced();
@@ -492,6 +493,12 @@ void EditEntryWidget::setupEntryUpdate()
         connect(m_sshAgentUi->requireUserConfirmationCheckBox, SIGNAL(stateChanged(int)), this, SLOT(setModified()));
         connect(m_sshAgentUi->lifetimeCheckBox, SIGNAL(stateChanged(int)), this, SLOT(setModified()));
         connect(m_sshAgentUi->lifetimeSpinBox, SIGNAL(valueChanged(int)), this, SLOT(setModified()));
+        connect(m_sshAgentUi->attachmentCertificateRadioButton, SIGNAL(toggled(bool)), this, SLOT(setModified()));
+        connect(m_sshAgentUi->externalCertificateFileRadioButton, SIGNAL(toggled(bool)), this, SLOT(setModified()));
+        connect(m_sshAgentUi->attachmentCertificateComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(setModified()));
+        connect(m_sshAgentUi->attachmentCertificateComboBox, SIGNAL(editTextChanged(QString)), this, SLOT(setModified()));
+        connect(m_sshAgentUi->externalCertificateFileEdit, SIGNAL(textChanged(QString)), this, SLOT(setModified()));
+        connect(m_sshAgentUi->addCertificateToAgentCheckBox, SIGNAL(stateChanged(int)), this, SLOT(setModified()));
     }
 #endif
 
@@ -568,16 +575,46 @@ void EditEntryWidget::setupSSHAgent()
     connect(m_sshAgentUi->decryptButton, &QPushButton::clicked, this, &EditEntryWidget::decryptPrivateKey);
     connect(m_sshAgentUi->copyToClipboardButton, &QPushButton::clicked, this, &EditEntryWidget::copyPublicKey);
     connect(m_sshAgentUi->generateButton, &QPushButton::clicked, this, &EditEntryWidget::generatePrivateKey);
+    connect(m_sshAgentUi->attachmentCertificateRadioButton, &QRadioButton::clicked,
+            this, &EditEntryWidget::updateSSHAgentKeyInfo);
+    connect(m_sshAgentUi->attachmentCertificateComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &EditEntryWidget::updateSSHAgentAttachmentCertificate);
+    connect(m_sshAgentUi->externalCertificateFileRadioButton, &QRadioButton::clicked,
+            this, &EditEntryWidget::updateSSHAgentKeyInfo);
+    connect(m_sshAgentUi->externalCertificateFileEdit, &QLineEdit::textChanged,
+            this, &EditEntryWidget::updateSSHAgentKeyInfo);
+    connect(m_sshAgentUi->browseCertificateButton, &QPushButton::clicked, this, &EditEntryWidget::browseCertificate);
 
     connect(m_attachments.data(), &EntryAttachments::modified,
             this, &EditEntryWidget::updateSSHAgentAttachments);
     // clang-format on
 
+    blockSSHAgentSignals(false);
+
     addPage(tr("SSH Agent"), icons()->icon("utilities-terminal"), m_sshAgentWidget);
+}
+
+void EditEntryWidget::blockSSHAgentSignals(const bool block)
+{
+    if (block == m_blockSSHAgentSignals) {
+        return;
+    }
+    m_blockSSHAgentSignals = block;
+
+    m_sshAgentUi->attachmentRadioButton->blockSignals(block);
+    m_sshAgentUi->attachmentComboBox->blockSignals(block);
+    m_sshAgentUi->externalFileRadioButton->blockSignals(block);
+    m_sshAgentUi->externalFileEdit->blockSignals(block);
+    m_attachments.data()->blockSignals(block);
+    m_sshAgentUi->attachmentCertificateRadioButton->blockSignals(block);
+    m_sshAgentUi->attachmentCertificateComboBox->blockSignals(block);
+    m_sshAgentUi->externalCertificateFileRadioButton->blockSignals(block);
+    m_sshAgentUi->externalCertificateFileEdit->blockSignals(block);
 }
 
 void EditEntryWidget::setSSHAgentSettings()
 {
+    blockSSHAgentSignals();
     m_sshAgentUi->addKeyToAgentCheckBox->setChecked(m_sshAgentSettings.addAtDatabaseOpen());
     m_sshAgentUi->removeKeyFromAgentCheckBox->setChecked(m_sshAgentSettings.removeAtDatabaseClose());
     m_sshAgentUi->requireUserConfirmationCheckBox->setChecked(m_sshAgentSettings.useConfirmConstraintWhenAdding());
@@ -587,10 +624,14 @@ void EditEntryWidget::setSSHAgentSettings()
     m_sshAgentUi->addToAgentButton->setEnabled(false);
     m_sshAgentUi->removeFromAgentButton->setEnabled(false);
     m_sshAgentUi->copyToClipboardButton->setEnabled(false);
+    m_sshAgentUi->addCertificateToAgentCheckBox->setChecked(m_sshAgentSettings.useCertificate()); // AlexpFr redondant ?
+    m_sshAgentUi->attachmentCertificateComboBox->clear(); // AlexpFr: why ?
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::updateSSHAgent()
 {
+    blockSSHAgentSignals();
     m_sshAgentSettings.reset();
     m_sshAgentSettings.fromEntry(m_entry);
     setSSHAgentSettings();
@@ -602,6 +643,7 @@ void EditEntryWidget::updateSSHAgent()
     }
 
     updateSSHAgentAttachments();
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::updateSSHAgentAttachment()
@@ -618,9 +660,13 @@ void EditEntryWidget::updateSSHAgentAttachments()
         m_sshAgentSettings.reset();
         setSSHAgentSettings();
     }
+    blockSSHAgentSignals();
 
     m_sshAgentUi->attachmentComboBox->clear();
     m_sshAgentUi->attachmentComboBox->addItem("");
+
+    m_sshAgentUi->attachmentCertificateComboBox->clear();
+    m_sshAgentUi->attachmentCertificateComboBox->addItem("");
 
     for (const QString& fileName : m_attachments->keys()) {
         if (fileName == "KeeAgent.settings") {
@@ -628,6 +674,7 @@ void EditEntryWidget::updateSSHAgentAttachments()
         }
 
         m_sshAgentUi->attachmentComboBox->addItem(fileName);
+        m_sshAgentUi->attachmentCertificateComboBox->addItem(fileName);
     }
 
     m_sshAgentUi->attachmentComboBox->setCurrentText(m_sshAgentSettings.attachmentName());
@@ -639,11 +686,23 @@ void EditEntryWidget::updateSSHAgentAttachments()
         m_sshAgentUi->externalFileRadioButton->setChecked(true);
     }
 
+    m_sshAgentUi->attachmentCertificateComboBox->setCurrentText(m_sshAgentSettings.attachmentNameCertificate());
+    m_sshAgentUi->externalCertificateFileEdit->setText(m_sshAgentSettings.fileNameCertificate());
+
+    if (m_sshAgentSettings.selectedCertificateType() == "attachment") {
+        m_sshAgentUi->attachmentCertificateRadioButton->setChecked(true);
+    } else {
+        m_sshAgentUi->externalCertificateFileRadioButton->setChecked(true);
+    }
+
+    blockSSHAgentSignals(false);
+
     updateSSHAgentKeyInfo();
 }
 
 void EditEntryWidget::updateSSHAgentKeyInfo()
 {
+    blockSSHAgentSignals();
     m_sshAgentUi->addToAgentButton->setEnabled(false);
     m_sshAgentUi->removeFromAgentButton->setEnabled(false);
     m_sshAgentUi->copyToClipboardButton->setEnabled(false);
@@ -655,6 +714,7 @@ void EditEntryWidget::updateSSHAgentKeyInfo()
     OpenSSHKey key;
 
     if (!getOpenSSHKey(key)) {
+        blockSSHAgentSignals(false);
         return;
     }
 
@@ -687,6 +747,7 @@ void EditEntryWidget::updateSSHAgentKeyInfo()
 
         sshAgent()->setAutoRemoveOnLock(key, m_sshAgentUi->removeKeyFromAgentCheckBox->isChecked());
     }
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::toKeeAgentSettings(KeeAgentSettings& settings) const
@@ -710,6 +771,14 @@ void EditEntryWidget::toKeeAgentSettings(KeeAgentSettings& settings) const
 
     // we don't use this either but we don't want it to dirty flag the config
     settings.setSaveAttachmentToTempFile(m_sshAgentSettings.saveAttachmentToTempFile());
+
+    settings.setUseCertificate(m_sshAgentUi->addCertificateToAgentCheckBox->isChecked());
+    settings.setSelectedCertificateType(m_sshAgentUi->attachmentCertificateRadioButton->isChecked() ? "attachment" : "file");
+    settings.setAttachmentCertificateName(m_sshAgentUi->attachmentCertificateComboBox->currentText());
+    settings.setFileNameCertificate(m_sshAgentUi->externalCertificateFileEdit->text());
+
+    // we don't use this either but we don't want it to dirty flag the config
+    settings.setSaveAttachmentCertificateToTempFile(m_sshAgentSettings.saveAttachmentCertificateToTempFile());
 }
 
 void EditEntryWidget::updateTotp()
@@ -721,6 +790,7 @@ void EditEntryWidget::updateTotp()
 
 void EditEntryWidget::browsePrivateKey()
 {
+    blockSSHAgentSignals();
     auto fileName = fileDialog()->getOpenFileName(this, tr("Select private key"), FileDialog::getLastDir("sshagent"));
     if (!fileName.isEmpty()) {
         FileDialog::saveLastDir("sshagent", fileName);
@@ -728,6 +798,7 @@ void EditEntryWidget::browsePrivateKey()
         m_sshAgentUi->externalFileRadioButton->setChecked(true);
         updateSSHAgentKeyInfo();
     }
+    blockSSHAgentSignals(false);
 }
 
 bool EditEntryWidget::getOpenSSHKey(OpenSSHKey& key, bool decrypt)
@@ -770,6 +841,25 @@ void EditEntryWidget::addKeyToAgent()
         showMessage(sshAgent()->errorString(), MessageWidget::Error);
         return;
     }
+}
+
+void EditEntryWidget::updateSSHAgentAttachmentCertificate()
+{
+    m_sshAgentUi->attachmentCertificateRadioButton->setChecked(true);
+    updateSSHAgentKeyInfo();
+}
+
+void EditEntryWidget::browseCertificate()
+{
+    blockSSHAgentSignals();
+    auto fileName = fileDialog()->getOpenFileName(this, tr("Select certificate"), FileDialog::getLastDir("sshagent"));
+    if (!fileName.isEmpty()) {
+        FileDialog::saveLastDir("sshagent", fileName);
+        m_sshAgentUi->externalCertificateFileEdit->setText(fileName);
+        m_sshAgentUi->externalCertificateFileRadioButton->setChecked(true);
+        updateSSHAgentKeyInfo();
+    }
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::removeKeyFromAgent()
@@ -870,6 +960,7 @@ void EditEntryWidget::loadEntry(Entry* entry,
                                 const QString& parentName,
                                 QSharedPointer<Database> database)
 {
+    blockSSHAgentSignals();
     m_entry = entry;
     m_db = std::move(database);
     m_create = create;
@@ -900,6 +991,7 @@ void EditEntryWidget::loadEntry(Entry* entry,
     showApplyButton(!m_create);
 
     setModified(false);
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::setForms(Entry* entry, bool restore)
@@ -1170,7 +1262,9 @@ bool EditEntryWidget::commitEntry()
     m_autoTypeAssoc->removeEmpty();
 
 #ifdef WITH_XC_SSHAGENT
+    blockSSHAgentSignals();
     toKeeAgentSettings(m_sshAgentSettings);
+    blockSSHAgentSignals(false);
 #endif
 
     // Begin entry update
@@ -1206,6 +1300,7 @@ bool EditEntryWidget::commitEntry()
 void EditEntryWidget::acceptEntry()
 {
     if (commitEntry()) {
+        m_sshAgentUi->privateKeyTabWidget->setCurrentIndex(0);
         clear();
         emit editFinished(true);
     }
@@ -1322,12 +1417,14 @@ void EditEntryWidget::cancel()
         }
     }
 
+    m_sshAgentUi->privateKeyTabWidget->setCurrentIndex(0);
     clear();
     emit editFinished(accepted);
 }
 
 void EditEntryWidget::clear()
 {
+    blockSSHAgentSignals();
     if (m_entry) {
         m_entry->disconnect(this);
     }
@@ -1347,6 +1444,7 @@ void EditEntryWidget::clear()
     m_historyModel->clear();
     m_iconsWidget->reset();
     hideMessage();
+    blockSSHAgentSignals(false);
 }
 
 #ifdef WITH_XC_NETWORKING

@@ -125,6 +125,8 @@ private slots:
     void decryptPrivateKey();
     void copyPublicKey();
     void generatePrivateKey();
+    void updateSSHAgentAttachmentCertificate();
+    void browseCertificate();
 #endif
 #ifdef WITH_XC_BROWSER
     void updateBrowserModified();
@@ -146,6 +148,7 @@ private:
 #endif
 #ifdef WITH_XC_SSHAGENT
     void setupSSHAgent();
+    void blockSSHAgentSignals(const bool block = true);
 #endif
     void setupProperties();
     void setupHistory();
@@ -170,6 +173,8 @@ private:
 #ifdef WITH_XC_SSHAGENT
     KeeAgentSettings m_sshAgentSettings;
     QString m_pendingPrivateKey;
+    QPointer<Entry> m_entryCertificate;
+    const QScopedPointer<EntryAttachments> m_attachmentsCertificate;
 #endif
     const QScopedPointer<Ui::EditEntryWidgetMain> m_mainUi;
     const QScopedPointer<Ui::EditEntryWidgetAdvanced> m_advancedUi;
@@ -206,6 +211,7 @@ private:
     QCompleter* const m_usernameCompleter;
     QStringListModel* const m_usernameCompleterModel;
     QTimer m_entryModifiedTimer;
+    bool m_blockSSHAgentSignals = false;
 
     Q_DISABLE_COPY(EditEntryWidget)
 };
