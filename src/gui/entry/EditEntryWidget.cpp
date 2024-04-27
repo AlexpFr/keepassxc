@@ -94,6 +94,7 @@ EditEntryWidget::EditEntryWidget(QWidget* parent)
     , m_autoTypeWindowSequenceGroup(new QButtonGroup(this))
     , m_usernameCompleter(new QCompleter(this))
     , m_usernameCompleterModel(new QStringListModel(this))
+    , m_blockSSHAgentSignals(new bool)
 {
     setupMain();
     setupAdvanced();
@@ -573,11 +574,28 @@ void EditEntryWidget::setupSSHAgent()
             this, &EditEntryWidget::updateSSHAgentAttachments);
     // clang-format on
 
+    blockSSHAgentSignals(false);
+
     addPage(tr("SSH Agent"), icons()->icon("utilities-terminal"), m_sshAgentWidget);
+}
+
+void EditEntryWidget::blockSSHAgentSignals(const bool block)
+{
+    if (block == m_blockSSHAgentSignals) {
+        return;
+    }
+    m_blockSSHAgentSignals = block;
+
+    m_sshAgentUi->attachmentRadioButton->blockSignals(block);
+    m_sshAgentUi->attachmentComboBox->blockSignals(block);
+    m_sshAgentUi->externalFileRadioButton->blockSignals(block);
+    m_sshAgentUi->externalFileEdit->blockSignals(block);
+    m_attachments.data()->blockSignals(block);
 }
 
 void EditEntryWidget::setSSHAgentSettings()
 {
+    blockSSHAgentSignals();
     m_sshAgentUi->addKeyToAgentCheckBox->setChecked(m_sshAgentSettings.addAtDatabaseOpen());
     m_sshAgentUi->removeKeyFromAgentCheckBox->setChecked(m_sshAgentSettings.removeAtDatabaseClose());
     m_sshAgentUi->requireUserConfirmationCheckBox->setChecked(m_sshAgentSettings.useConfirmConstraintWhenAdding());
@@ -587,10 +605,12 @@ void EditEntryWidget::setSSHAgentSettings()
     m_sshAgentUi->addToAgentButton->setEnabled(false);
     m_sshAgentUi->removeFromAgentButton->setEnabled(false);
     m_sshAgentUi->copyToClipboardButton->setEnabled(false);
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::updateSSHAgent()
 {
+    blockSSHAgentSignals();
     m_sshAgentSettings.reset();
     m_sshAgentSettings.fromEntry(m_entry);
     setSSHAgentSettings();
@@ -602,6 +622,7 @@ void EditEntryWidget::updateSSHAgent()
     }
 
     updateSSHAgentAttachments();
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::updateSSHAgentAttachment()
@@ -618,6 +639,7 @@ void EditEntryWidget::updateSSHAgentAttachments()
         m_sshAgentSettings.reset();
         setSSHAgentSettings();
     }
+    blockSSHAgentSignals();
 
     m_sshAgentUi->attachmentComboBox->clear();
     m_sshAgentUi->attachmentComboBox->addItem("");
@@ -638,12 +660,14 @@ void EditEntryWidget::updateSSHAgentAttachments()
     } else {
         m_sshAgentUi->externalFileRadioButton->setChecked(true);
     }
+    blockSSHAgentSignals(false);
 
     updateSSHAgentKeyInfo();
 }
 
 void EditEntryWidget::updateSSHAgentKeyInfo()
 {
+    blockSSHAgentSignals();
     m_sshAgentUi->addToAgentButton->setEnabled(false);
     m_sshAgentUi->removeFromAgentButton->setEnabled(false);
     m_sshAgentUi->copyToClipboardButton->setEnabled(false);
@@ -655,6 +679,7 @@ void EditEntryWidget::updateSSHAgentKeyInfo()
     OpenSSHKey key;
 
     if (!getOpenSSHKey(key)) {
+        blockSSHAgentSignals(false);
         return;
     }
 
@@ -681,6 +706,7 @@ void EditEntryWidget::updateSSHAgentKeyInfo()
 
         sshAgent()->setAutoRemoveOnLock(key, m_sshAgentUi->removeKeyFromAgentCheckBox->isChecked());
     }
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::toKeeAgentSettings(KeeAgentSettings& settings) const
@@ -715,6 +741,7 @@ void EditEntryWidget::updateTotp()
 
 void EditEntryWidget::browsePrivateKey()
 {
+    blockSSHAgentSignals();
     auto fileName = fileDialog()->getOpenFileName(this, tr("Select private key"), FileDialog::getLastDir("sshagent"));
     if (!fileName.isEmpty()) {
         FileDialog::saveLastDir("sshagent", fileName);
@@ -722,6 +749,7 @@ void EditEntryWidget::browsePrivateKey()
         m_sshAgentUi->externalFileRadioButton->setChecked(true);
         updateSSHAgentKeyInfo();
     }
+    blockSSHAgentSignals(false);
 }
 
 bool EditEntryWidget::getOpenSSHKey(OpenSSHKey& key, bool decrypt)
@@ -866,6 +894,7 @@ void EditEntryWidget::loadEntry(Entry* entry,
                                 const QString& parentName,
                                 QSharedPointer<Database> database)
 {
+    blockSSHAgentSignals();
     m_entry = entry;
     m_db = std::move(database);
     m_create = create;
@@ -896,6 +925,7 @@ void EditEntryWidget::loadEntry(Entry* entry,
     showApplyButton(!m_create);
 
     setModified(false);
+    blockSSHAgentSignals(false);
 }
 
 void EditEntryWidget::setForms(Entry* entry, bool restore)
@@ -1166,7 +1196,9 @@ bool EditEntryWidget::commitEntry()
     m_autoTypeAssoc->removeEmpty();
 
 #ifdef WITH_XC_SSHAGENT
+    blockSSHAgentSignals();
     toKeeAgentSettings(m_sshAgentSettings);
+    blockSSHAgentSignals(false);
 #endif
 
     // Begin entry update
@@ -1327,6 +1359,7 @@ void EditEntryWidget::cancel()
 
 void EditEntryWidget::clear()
 {
+    blockSSHAgentSignals();
     if (m_entry) {
         m_entry->disconnect(this);
     }
@@ -1346,6 +1379,7 @@ void EditEntryWidget::clear()
     m_historyModel->clear();
     m_iconsWidget->reset();
     hideMessage();
+    blockSSHAgentSignals(false);
 }
 
 #ifdef WITH_XC_NETWORKING

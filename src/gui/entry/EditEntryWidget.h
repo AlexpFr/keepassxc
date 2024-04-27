@@ -146,6 +146,7 @@ private:
 #endif
 #ifdef WITH_XC_SSHAGENT
     void setupSSHAgent();
+    void blockSSHAgentSignals(const bool block = true);
 #endif
     void setupProperties();
     void setupHistory();
@@ -206,6 +207,7 @@ private:
     QCompleter* const m_usernameCompleter;
     QStringListModel* const m_usernameCompleterModel;
     QTimer m_entryModifiedTimer;
+    bool m_blockSSHAgentSignals = false;
 
     Q_DISABLE_COPY(EditEntryWidget)
 };
