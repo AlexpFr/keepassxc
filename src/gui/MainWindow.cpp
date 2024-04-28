@@ -1589,6 +1589,7 @@ void MainWindow::agentEnabled(bool enabled)
 {
     m_ui->actionEntryAddToAgent->setVisible(enabled);
     m_ui->actionEntryRemoveFromAgent->setVisible(enabled);
+    m_ui->actionFlushSSHAgent->setEnabled(enabled);
     m_ui->actionFlushSSHAgent->setVisible(enabled);
 }
 
@@ -2083,7 +2084,9 @@ void MainWindow::initActionCollection()
                     m_ui->actionGroupEmptyRecycleBin,
                     // Tools Menu
                     m_ui->actionPasswordGenerator,
+#ifdef WITH_XC_SSHAGENT
                     m_ui->actionFlushSSHAgent,
+#endif
                     m_ui->actionSettings,
                     // View Menu
                     m_ui->actionThemeAuto,
