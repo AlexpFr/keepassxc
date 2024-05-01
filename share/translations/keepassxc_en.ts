@@ -6201,7 +6201,13 @@ We recommend you use the AppImage available on our downloads page.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>(encrypted)</source>
+        <source>encrypted</source>
+        <comment>fingerprint</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>encrypted</source>
+        <comment>comment</comment>
         <translation type="unfinished"></translation>
     </message>
 </context>
