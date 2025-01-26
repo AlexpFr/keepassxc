@@ -384,7 +384,7 @@ bool SSHAgent::clearAllAgentIdentities()
     QByteArray responseData;
     BinaryStream request(&requestData);
 
-    // Same request order as OpenBSD ssh-add: useful?
+    // SSH2 Identity Removal
     request.write(SSH2_AGENTC_REMOVE_ALL_IDENTITIES);
 
     if (!sendMessage(requestData, responseData)) {
@@ -395,7 +395,7 @@ bool SSHAgent::clearAllAgentIdentities()
     request.flush();
     responseData.clear();
 
-    // Same request order as OpenBSD ssh-add: useful?
+    // SSH1 Identity Removal
     request.write(SSH_AGENTC_REMOVE_ALL_RSA_IDENTITIES);
 
     // ignore error-code for ssh1

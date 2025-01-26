@@ -825,12 +825,8 @@ void EditEntryWidget::removeKeyFromAgent()
 
 void EditEntryWidget::clearAgent()
 {
-    if (!sshAgent()->clearAllAgentIdentities()) {
-        showMessage(sshAgent()->errorString(), MessageWidget::Error);
-        return;
-    }
-
-    showMessage(sshAgent()->errorString(), MessageWidget::Positive);
+    auto ret = sshAgent()->clearAllAgentIdentities();
+    showMessage(sshAgent()->errorString(), ret ? MessageWidget::Positive : KMessageWidget::Error);
 }
 
 void EditEntryWidget::decryptPrivateKey()

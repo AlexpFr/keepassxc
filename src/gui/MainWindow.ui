@@ -1318,7 +1318,7 @@
     <string>Clear SSH Agent</string>
    </property>
    <property name="toolTip">
-    <string>Clear all identities like ssh-add -D</string>
+    <string>Clear all identities in ssh-agent</string>
    </property>
    <property name="menuRole">
     <enum>QAction::TextHeuristicRole</enum>

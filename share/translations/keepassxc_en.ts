@@ -6262,6 +6262,14 @@ Expect some bugs and minor issues, this version is meant for testing purposes.</
         <source>E&amp;xpire Entry…</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Clear SSH Agent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Clear all identities in ssh-agent</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ManageDatabase</name>

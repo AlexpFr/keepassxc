@@ -211,7 +211,10 @@ MainWindow::MainWindow()
 #ifdef WITH_XC_SSHAGENT
     connect(sshAgent(), SIGNAL(error(QString)), this, SLOT(showErrorMessage(QString)));
     connect(sshAgent(), SIGNAL(enabledChanged(bool)), this, SLOT(agentEnabled(bool)));
+    connect(m_ui->actionClearSSHAgent, SIGNAL(triggered()), SLOT(clearSSHAgent()));
     m_ui->settingsWidget->addSettingsPage(new AgentSettingsPage());
+#else
+    agentEnabled(false);
 #endif
 
 #if defined(WITH_XC_KEESHARE)
@@ -414,7 +417,7 @@ MainWindow::MainWindow()
 
     m_ui->actionSettings->setIcon(icons()->icon("configure"));
     m_ui->actionPasswordGenerator->setIcon(icons()->icon("password-generator"));
-    m_ui->actionFlushSSHAgent->setIcon(icons()->icon("utilities-terminal"));
+    m_ui->actionClearSSHAgent->setIcon(icons()->icon("utilities-terminal"));
 
     m_ui->actionAbout->setIcon(icons()->icon("help-about"));
     m_ui->actionDonate->setIcon(icons()->icon("donate"));
@@ -528,7 +531,6 @@ MainWindow::MainWindow()
 #ifdef WITH_XC_SSHAGENT
     m_actionMultiplexer.connect(m_ui->actionEntryAddToAgent, SIGNAL(triggered()), SLOT(addToAgent()));
     m_actionMultiplexer.connect(m_ui->actionEntryRemoveFromAgent, SIGNAL(triggered()), SLOT(removeFromAgent()));
-    m_actionMultiplexer.connect(m_ui->actionClearSSHAgent, SIGNAL(triggered()), SLOT(clearSSHAgent()));
 #endif
 
     m_actionMultiplexer.connect(m_ui->actionGroupNew, SIGNAL(triggered()), SLOT(createGroup()));
@@ -972,8 +974,8 @@ void MainWindow::updateMenuActionState()
     m_ui->actionEntryAddToAgent->setEnabled(hasSSHKey);
     m_ui->actionEntryRemoveFromAgent->setVisible(hasSSHKey);
     m_ui->actionEntryRemoveFromAgent->setEnabled(hasSSHKey);
-    m_ui->actionFlushSSHAgent->setVisible(sshAgent()->isEnabled());
-    m_ui->actionFlushSSHAgent->setEnabled(sshAgent()->isEnabled());
+    m_ui->actionClearSSHAgent->setVisible(sshAgent()->isEnabled());
+    m_ui->actionClearSSHAgent->setEnabled(sshAgent()->isEnabled());
 #endif
 
     m_ui->actionGroupNew->setEnabled(groupSelected && !inRecycleBin);
@@ -1462,6 +1464,15 @@ void MainWindow::disableMenuAndToolbar()
 {
     m_ui->toolBar->setDisabled(true);
     m_ui->menubar->setDisabled(true);
+}
+
+void MainWindow::clearSSHAgent()
+{
+#ifdef WITH_XC_SSHAGENT
+    auto agent = SSHAgent::instance();
+    auto ret = agent->clearAllAgentIdentities();
+    displayGlobalMessage(agent->errorString(), ret ? MessageWidget::Positive : KMessageWidget::Error, false);
+#endif
 }
 
 void MainWindow::saveWindowInformation()
@@ -2084,9 +2095,7 @@ void MainWindow::initActionCollection()
                     m_ui->actionGroupEmptyRecycleBin,
                     // Tools Menu
                     m_ui->actionPasswordGenerator,
-#ifdef WITH_XC_SSHAGENT
                     m_ui->actionClearSSHAgent,
-#endif
                     m_ui->actionSettings,
                     // View Menu
                     m_ui->actionThemeAuto,
