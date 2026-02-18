@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#define TRACE fprintf(stderr, "[TRACE] %s\n", __FUNCTION__);
 
 #include "EditEntryWidget.h"
 #include "ui_EditEntryWidgetAdvanced.h"
@@ -593,6 +594,7 @@ void EditEntryWidget::updateHistoryButtons(const QModelIndex& current, const QMo
 #ifdef WITH_XC_SSHAGENT
 void EditEntryWidget::setupSSHAgent()
 {
+    TRACE
     m_pendingPrivateKey = "";
     m_sshAgentUi->setupUi(m_sshAgentWidget);
 
@@ -602,13 +604,58 @@ void EditEntryWidget::setupSSHAgent()
     m_sshAgentUi->publicKeyEdit->setFont(fixedFont);
 
     // clang-format off
-    connect(m_sshAgentUi->attachmentRadioButton, &QRadioButton::clicked,
-            this, &EditEntryWidget::updateSSHAgentKeyInfo);
-    connect(m_sshAgentUi->attachmentComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            this, &EditEntryWidget::updateSSHAgentAttachment);
-    connect(m_sshAgentUi->externalFileRadioButton, &QRadioButton::clicked,
-            this, &EditEntryWidget::updateSSHAgentKeyInfo);
-    connect(m_sshAgentUi->externalFileEdit, &QLineEdit::textChanged, this, &EditEntryWidget::updateSSHAgentKeyInfo);
+    //connect(m_sshAgentUi->attachmentRadioButton, &QRadioButton::clicked,
+    //        this, &EditEntryWidget::updateSSHAgentKeyInfo);
+    connect(m_sshAgentUi->attachmentRadioButton,
+        &QRadioButton::clicked,
+        this,
+        [this](bool checked)
+        {
+            fprintf(stderr, "[DEBUG] attachmentRadioButton clicked (checked=%d)\n", checked);
+            updateSSHAgentKeyInfo();
+        });
+    //connect(m_sshAgentUi->attachmentComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+    //        this, &EditEntryWidget::updateSSHAgentAttachment);
+    connect(m_sshAgentUi->attachmentComboBox,
+            static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this,
+            [this](int index)
+            {
+                fprintf(stderr,
+                        "[DEBUG] attachmentComboBox currentIndexChanged index=%d text=%s\n",
+                        index,
+                        m_sshAgentUi->attachmentComboBox->itemText(index).toStdString().c_str());
+
+                updateSSHAgentAttachment();
+            });
+    // connect(m_sshAgentUi->externalFileRadioButton, &QRadioButton::clicked,
+    //        this, &EditEntryWidget::updateSSHAgentKeyInfo);
+    connect(m_sshAgentUi->externalFileRadioButton,
+            &QRadioButton::clicked,
+            this,
+            [this](bool checked)
+            {
+                fprintf(stderr,
+                        "[DEBUG] externalFileRadioButton clicked checked=%d\n",
+                        checked);
+
+                updateSSHAgentKeyInfo();
+            });
+    //connect(m_sshAgentUi->externalFileEdit, &QLineEdit::textChanged, this, &EditEntryWidget::updateSSHAgentKeyInfo);
+    connect(m_sshAgentUi->externalFileEdit,
+            &QLineEdit::textChanged,
+            this,
+            [this](const QString& text)
+            {
+                fprintf(stderr,
+                        "[DEBUG] externalFileEdit textChanged widget=%p text='%s'\n",
+                        m_sshAgentUi->externalFileEdit,
+                        text.toStdString().c_str());
+
+                fflush(stderr);
+
+                updateSSHAgentKeyInfo();
+            });
     connect(m_sshAgentUi->browseButton, &QPushButton::clicked, this, &EditEntryWidget::browsePrivateKey);
     connect(m_sshAgentUi->addToAgentButton, &QPushButton::clicked, this, &EditEntryWidget::addKeyToAgent);
     connect(m_sshAgentUi->removeFromAgentButton, &QPushButton::clicked, this, &EditEntryWidget::removeKeyFromAgent);
@@ -617,8 +664,18 @@ void EditEntryWidget::setupSSHAgent()
     connect(m_sshAgentUi->copyToClipboardButton, &QPushButton::clicked, this, &EditEntryWidget::copyPublicKey);
     connect(m_sshAgentUi->generateButton, &QPushButton::clicked, this, &EditEntryWidget::generatePrivateKey);
 
-    connect(m_attachments.data(), &EntryAttachments::modified,
-            this, &EditEntryWidget::updateSSHAgentAttachments);
+    // connect(m_attachments.data(), &EntryAttachments::modified,
+    //        this, &EditEntryWidget::updateSSHAgentAttachments);
+    connect(m_attachments.data(),
+            &EntryAttachments::modified,
+            this,
+            [this]()
+            {
+                fprintf(stderr,
+                        "[DEBUG] EntryAttachments modified signal received\n");
+
+                updateSSHAgentAttachments();
+            });
     // clang-format on
 
     addPage(tr("SSH Agent"), icons()->icon("utilities-terminal"), m_sshAgentWidget);
@@ -626,6 +683,7 @@ void EditEntryWidget::setupSSHAgent()
 
 void EditEntryWidget::setSSHAgentSettings()
 {
+    TRACE
     m_sshAgentUi->addKeyToAgentCheckBox->setChecked(m_sshAgentSettings.addAtDatabaseOpen());
     m_sshAgentUi->removeKeyFromAgentCheckBox->setChecked(m_sshAgentSettings.removeAtDatabaseClose());
     m_sshAgentUi->requireUserConfirmationCheckBox->setChecked(m_sshAgentSettings.useConfirmConstraintWhenAdding());
@@ -640,6 +698,7 @@ void EditEntryWidget::setSSHAgentSettings()
 
 void EditEntryWidget::updateSSHAgent()
 {
+    TRACE
     m_sshAgentSettings.reset();
     m_sshAgentSettings.fromEntry(m_entry);
     setSSHAgentSettings();
@@ -655,12 +714,14 @@ void EditEntryWidget::updateSSHAgent()
 
 void EditEntryWidget::updateSSHAgentAttachment()
 {
+    TRACE
     m_sshAgentUi->attachmentRadioButton->setChecked(true);
     updateSSHAgentKeyInfo();
 }
 
 void EditEntryWidget::updateSSHAgentAttachments()
 {
+    TRACE
     // detect if KeeAgent.settings was removed by hand and reset settings
     if (m_entry && KeeAgentSettings::inEntryAttachments(m_entry->attachments())
         && !KeeAgentSettings::inEntryAttachments(m_attachments.data())) {
@@ -695,6 +756,7 @@ void EditEntryWidget::updateSSHAgentAttachments()
 
 void EditEntryWidget::updateSSHAgentKeyInfo()
 {
+    TRACE
     m_sshAgentUi->addToAgentButton->setEnabled(false);
     m_sshAgentUi->removeFromAgentButton->setEnabled(false);
     m_sshAgentUi->copyToClipboardButton->setEnabled(false);
@@ -737,6 +799,7 @@ void EditEntryWidget::updateSSHAgentKeyInfo()
 
 void EditEntryWidget::toKeeAgentSettings(KeeAgentSettings& settings) const
 {
+    TRACE
     settings.setAddAtDatabaseOpen(m_sshAgentUi->addKeyToAgentCheckBox->isChecked());
     settings.setRemoveAtDatabaseClose(m_sshAgentUi->removeKeyFromAgentCheckBox->isChecked());
     settings.setUseConfirmConstraintWhenAdding(m_sshAgentUi->requireUserConfirmationCheckBox->isChecked());
@@ -760,6 +823,7 @@ void EditEntryWidget::toKeeAgentSettings(KeeAgentSettings& settings) const
 
 void EditEntryWidget::updateTotp()
 {
+    TRACE
     if (m_entry) {
         m_attributesModel->setEntryAttributes(m_entry->attributes());
     }
@@ -767,6 +831,7 @@ void EditEntryWidget::updateTotp()
 
 void EditEntryWidget::browsePrivateKey()
 {
+    TRACE
     auto fileName = fileDialog()->getOpenFileName(this, tr("Select private key"), FileDialog::getLastDir("sshagent"));
     if (!fileName.isEmpty()) {
         FileDialog::saveLastDir("sshagent", fileName);
@@ -778,6 +843,7 @@ void EditEntryWidget::browsePrivateKey()
 
 bool EditEntryWidget::getOpenSSHKey(OpenSSHKey& key, bool decrypt)
 {
+    TRACE
     KeeAgentSettings settings;
     toKeeAgentSettings(settings);
 
@@ -800,6 +866,7 @@ bool EditEntryWidget::getOpenSSHKey(OpenSSHKey& key, bool decrypt)
 
 void EditEntryWidget::addKeyToAgent()
 {
+    TRACE
     OpenSSHKey key;
 
     if (!getOpenSSHKey(key, true)) {
@@ -820,6 +887,7 @@ void EditEntryWidget::addKeyToAgent()
 
 void EditEntryWidget::removeKeyFromAgent()
 {
+    TRACE
     OpenSSHKey key;
 
     if (!getOpenSSHKey(key)) {
@@ -834,12 +902,14 @@ void EditEntryWidget::removeKeyFromAgent()
 
 void EditEntryWidget::clearAgent()
 {
+    TRACE
     auto ret = sshAgent()->clearAllAgentIdentities();
     showMessage(sshAgent()->errorString(), ret ? MessageWidget::Positive : KMessageWidget::Error);
 }
 
 void EditEntryWidget::decryptPrivateKey()
 {
+    TRACE
     OpenSSHKey key;
 
     if (!getOpenSSHKey(key, true)) {
@@ -867,6 +937,7 @@ void EditEntryWidget::copyPublicKey()
 
 void EditEntryWidget::generatePrivateKey()
 {
+    TRACE
     auto dialog = new OpenSSHKeyGenDialog(this);
 
     OpenSSHKey key;
@@ -924,6 +995,7 @@ void EditEntryWidget::loadEntry(Entry* entry,
                                 const QString& parentName,
                                 QSharedPointer<Database> database)
 {
+    TRACE
     m_entry = entry;
     m_db = std::move(database);
     m_create = create;
@@ -960,10 +1032,12 @@ void EditEntryWidget::loadEntry(Entry* entry,
     }
 
     setModified(false);
+    TRACE
 }
 
 void EditEntryWidget::setForms(Entry* entry, bool restore)
 {
+    TRACE
 #ifdef WITH_XC_SSHAGENT
     QSignalBlocker attachmentsBlocker(m_attachments.data());
 #endif
@@ -1174,6 +1248,7 @@ void EditEntryWidget::setForms(Entry* entry, bool restore)
  */
 bool EditEntryWidget::commitEntry()
 {
+    TRACE
     if (m_history) {
         clear();
         hideMessage();
@@ -1281,6 +1356,7 @@ void EditEntryWidget::acceptEntry()
 
 void EditEntryWidget::updateEntryData(Entry* entry) const
 {
+    TRACE
     QRegularExpression newLineRegex("(?:\r?\n|\r)");
 
     entry->attributes()->copyCustomKeysFrom(m_entryAttributes);
@@ -1399,6 +1475,7 @@ void EditEntryWidget::cancel()
 
 void EditEntryWidget::clear()
 {
+    TRACE
     if (m_entry) {
         m_entry->disconnect(this);
     }
